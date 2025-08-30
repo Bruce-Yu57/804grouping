@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>804班 隨機分組</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #00467F 0%, #A5CC82 100%);
+        }
+        .group-card {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .group-card:hover {
+            transform: translateY(-5px);
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="container mx-auto p-4 sm:p-8 text-center max-w-5xl">
+        <!-- 標題 -->
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 tracking-wider" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.4);">
+            804班 隨機分組工具
+        </h1>
+        <p class="text-lg text-white mb-8">輕鬆、公平地完成分組！</p>
+
+        <!-- 設定區 -->
+        <div class="bg-white bg-opacity-30 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto mb-8 shadow-lg flex flex-col sm:flex-row items-center justify-center gap-4">
+            <label for="group-count" class="text-2xl font-bold text-white">要分成幾組？</label>
+            <input type="number" id="group-count" min="2" max="12" value="4" class="w-24 text-center text-2xl font-bold p-2 rounded-lg shadow-inner border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <button id="generate-btn" class="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-500 text-gray-800 font-bold py-3 px-8 text-xl rounded-full shadow-lg transform hover:scale-105 transition-transform duration-200">
+                開始分組
+            </button>
+        </div>
+        
+        <!-- 錯誤訊息提示 -->
+        <p id="error-message" class="text-red-400 text-lg font-bold mb-4 h-6"></p>
+
+        <!-- 分組結果容器 -->
+        <div id="groups-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- 分組結果將由 JavaScript 動態生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 學生名單
+        const students = [
+            '陳相伶', '盧永安', '江浩宇', '張芯瑜', '陳品豪', 
+            '吳孟學', '許晉榮', '楊傑宇', '王元熙', '施鈞櫳',
+            '朱侹宇', '陳鋐珀'
+        ];
+        
+        // 取得 DOM 元素
+        const groupCountInput = document.getElementById('group-count');
+        const generateBtn = document.getElementById('generate-btn');
+        const groupsContainer = document.getElementById('groups-container');
+        const errorMessage = document.getElementById('error-message');
+
+        // Fisher-Yates (aka Knuth) 洗牌演算法
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // 產生並顯示分組
+        function generateGroups() {
+            errorMessage.textContent = ''; // 清空錯誤訊息
+            const groupCount = parseInt(groupCountInput.value);
+
+            // 驗證輸入
+            if (isNaN(groupCount) || groupCount < 2 || groupCount > students.length) {
+                errorMessage.textContent = `請輸入 2 到 ${students.length} 之間的數字！`;
+                groupsContainer.innerHTML = '';
+                return;
+            }
+
+            // 1. 打亂學生順序
+            const shuffledStudents = shuffleArray([...students]);
+            
+            // 2. 建立空的組別陣列
+            const groups = [];
+            for (let i = 0; i < groupCount; i++) {
+                groups.push([]);
+            }
+
+            // 3. 依序將學生分配到各組
+            shuffledStudents.forEach((student, index) => {
+                groups[index % groupCount].push(student);
+            });
+            
+            // 4. 在畫面上渲染結果
+            groupsContainer.innerHTML = ''; // 清空舊結果
+            groups.forEach((group, index) => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'group-card rounded-xl p-6 shadow-lg text-left';
+                
+                let membersHtml = group.map(member => `<li class="text-xl text-gray-700">${member}</li>`).join('');
+                
+                groupCard.innerHTML = `
+                    <h3 class="text-2xl font-bold text-gray-800 border-b-2 border-yellow-400 pb-2 mb-4">第 ${index + 1} 組</h3>
+                    <ul class="space-y-2 list-disc list-inside">${membersHtml}</ul>
+                `;
+                
+                groupsContainer.appendChild(groupCard);
+            });
+        }
+
+        // 設定按鈕的事件監聽
+        generateBtn.addEventListener('click', generateGroups);
+        
+        // 讓按下 Enter 鍵也能觸發
+        groupCountInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                generateGroups();
+            }
+        });
+
+    </script>
+</body>
+</html>
